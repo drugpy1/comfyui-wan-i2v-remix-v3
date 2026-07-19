@@ -14,7 +14,7 @@ RUN comfy node install --exit-on-fail comfyui-easy-use@1.3.4 || (echo "WARN: com
 ADD extra_model_paths.yaml /comfyui/extra_model_paths.yaml
 
 # Serverless handler + startup script (from runpod-workers/worker-comfyui)
-ADD handler.py /handler.py
+ADD rp_handler.py /rp_handler.py
 ADD start.sh /start.sh
 RUN chmod +x /start.sh
 
