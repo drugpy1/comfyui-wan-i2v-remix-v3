@@ -1,29 +1,22 @@
 # clean base image containing only comfyui, comfy-cli and comfyui-manager
 FROM runpod/worker-comfyui:5.8.4-base
 
-# build-time tokens for gated downloads — never baked into final image.
-# pass via: docker build --build-arg HF_TOKEN=$HF_TOKEN ...
-ARG HF_TOKEN=""
-
 # install custom nodes into comfyui
-RUN git clone https://github.com/kijai/ComfyUI-WanVideoWrapper /comfyui/custom_nodes/ComfyUI-WanVideoWrapper && cd /comfyui/custom_nodes/ComfyUI-WanVideoWrapper && (git checkout d9b1f4d1a5aea91d101ae97a54714a5861af3f50 2>/dev/null || (git fetch origin d9b1f4d1a5aea91d101ae97a54714a5861af3f50 --depth=1 && git checkout d9b1f4d1a5aea91d101ae97a54714a5861af3f50) || echo "WARN: commit d9b1f4d1a5aea91d101ae97a54714a5861af3f50 unreachable in https://github.com/kijai/ComfyUI-WanVideoWrapper, falling back to default branch HEAD")
-RUN comfy node install --exit-on-fail comfyui-wanvideowrapper@1.3.9 --mode remote || (echo "WARN: comfyui-wanvideowrapper@1.3.9 unavailable in registry, falling back to latest" >&2 && comfy node install --exit-on-fail comfyui-wanvideowrapper --mode remote)
-RUN git clone https://github.com/kijai/ComfyUI-KJNodes /comfyui/custom_nodes/ComfyUI-KJNodes && cd /comfyui/custom_nodes/ComfyUI-KJNodes && (git checkout a6b867b63a29ca48ddb15c589e17a9f2d8530d57 2>/dev/null || (git fetch origin a6b867b63a29ca48ddb15c589e17a9f2d8530d57 --depth=1 && git checkout a6b867b63a29ca48ddb15c589e17a9f2d8530d57) || echo "WARN: commit a6b867b63a29ca48ddb15c589e17a9f2d8530d57 unreachable in https://github.com/kijai/ComfyUI-KJNodes, falling back to default branch HEAD")
-RUN comfy node install --exit-on-fail comfyui-custom-scripts@1.2.5 || (echo "WARN: comfyui-custom-scripts@1.2.5 unavailable in registry, falling back to latest" >&2 && comfy node install --exit-on-fail comfyui-custom-scripts)
-RUN comfy node install --exit-on-fail comfyui-videohelpersuite@1.7.9 || (echo "WARN: comfyui-videohelpersuite@1.7.9 unavailable in registry, falling back to latest" >&2 && comfy node install --exit-on-fail comfyui-videohelpersuite)
-RUN comfy node install --exit-on-fail comfyui-easy-use@1.3.4 || (echo "WARN: comfyui-easy-use@1.3.4 unavailable in registry, falling back to latest" >&2 && comfy node install --exit-on-fail comfyui-easy-use)
+RUN git clone https://github.com/kijai/ComfyUI-WanVideoWrapper /comfyui/custom_nodes/ComfyUI-WanVideoWrapper && cd /comfyui/custom_nodes/ComfyUI-WanVideoWrapper && (git checkout d9b1f4d1a5aea91d101ae97a54714a5861af3f50 2>/dev/null || (git fetch origin d9b1f4d1a5aea91d101ae97a54714a5861af3f50 --depth=1 && git checkout d9b1f4d1a5aea91d101ae97a54714a5861af3f50) || echo "WARN: commit d9b1f4d1a5aea91d101ae97a54714a5861af3f50 unreachable, falling back to default branch HEAD")
+RUN comfy node install --exit-on-fail comfyui-wanvideowrapper@1.3.9 --mode remote || (echo "WARN: comfyui-wanvideowrapper@1.3.9 unavailable, falling back to latest" >&2 && comfy node install --exit-on-fail comfyui-wanvideowrapper --mode remote)
+RUN git clone https://github.com/kijai/ComfyUI-KJNodes /comfyui/custom_nodes/ComfyUI-KJNodes && cd /comfyui/custom_nodes/ComfyUI-KJNodes && (git checkout a6b867b63a29ca48ddb15c589e17a9f2d8530d57 2>/dev/null || (git fetch origin a6b867b63a29ca48ddb15c589e17a9f2d8530d57 --depth=1 && git checkout a6b867b63a29ca48ddb15c589e17a9f2d8530d57) || echo "WARN: commit a6b867b63a29ca48ddb15c589e17a9f2d8530d57 unreachable, falling back to default branch HEAD")
+RUN comfy node install --exit-on-fail comfyui-custom-scripts@1.2.5 || (echo "WARN: comfyui-custom-scripts@1.2.5 unavailable, falling back to latest" >&2 && comfy node install --exit-on-fail comfyui-custom-scripts)
+RUN comfy node install --exit-on-fail comfyui-videohelpersuite@1.7.9 || (echo "WARN: comfyui-videohelpersuite@1.7.9 unavailable, falling back to latest" >&2 && comfy node install --exit-on-fail comfyui-videohelpersuite)
+RUN comfy node install --exit-on-fail comfyui-easy-use@1.3.4 || (echo "WARN: comfyui-easy-use@1.3.4 unavailable, falling back to latest" >&2 && comfy node install --exit-on-fail comfyui-easy-use)
 
-# download models into comfyui
-RUN BACKOFFS="10 20 30 60 90" && for i in 1 2 3 4 5; do HF_TOKEN=$HF_TOKEN comfy model download --url 'https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/LoRAs/Wan22-Lightning/old/Wan2.2-Lightning_I2V-A14B-4steps-lora_HIGH_fp16.safetensors' --relative-path models/Unknown --filename 'Wan2.2-Lightning_I2V-A14B-4steps-lora_HIGH_fp16.safetensors' && break; if [ $i -eq 5 ]; then echo "model-download failed after 5 attempts" >&2; exit 1; fi; SLEEP=$(echo $BACKOFFS | cut -d ' ' -f $i) && echo "model-download attempt $i failed; retrying in $SLEEP seconds" >&2; sleep $SLEEP; done
-RUN BACKOFFS="10 20 30 60 90" && for i in 1 2 3 4 5; do HF_TOKEN=$HF_TOKEN comfy model download --url 'https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/LoRAs/Wan22-Lightning/old/Wan2.2-Lightning_I2V-A14B-4steps-lora_LOW_fp16.safetensors' --relative-path models/Unknown --filename 'Wan2.2-Lightning_I2V-A14B-4steps-lora_LOW_fp16.safetensors' && break; if [ $i -eq 5 ]; then echo "model-download failed after 5 attempts" >&2; exit 1; fi; SLEEP=$(echo $BACKOFFS | cut -d ' ' -f $i) && echo "model-download attempt $i failed; retrying in $SLEEP seconds" >&2; sleep $SLEEP; done
-RUN BACKOFFS="10 20 30 60 90" && for i in 1 2 3 4 5; do HF_TOKEN=$HF_TOKEN comfy model download --url 'https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_i2v_480p_14B_fp8_e4m3fn.safetensors' --relative-path models/diffusion_models --filename 'Wan2.2_Remix_NSFW_i2v_14b_high_lighting_fp8_e4m3fn_v3.0.safetensors' && break; if [ $i -eq 5 ]; then echo "model-download failed after 5 attempts" >&2; exit 1; fi; SLEEP=$(echo $BACKOFFS | cut -d ' ' -f $i) && echo "model-download attempt $i failed; retrying in $SLEEP seconds" >&2; sleep $SLEEP; done
-RUN BACKOFFS="10 20 30 60 90" && for i in 1 2 3 4 5; do HF_TOKEN=$HF_TOKEN comfy model download --url 'https://huggingface.co/FX-FeiHou/wan2.2-Remix/resolve/main/NSFW/Wan2.2_Remix_NSFW_i2v_14b_low_lighting_fp8_e4m3fn_v3.0.safetensors' --relative-path models/diffusion_models --filename 'Wan2.2_Remix_NSFW_i2v_14b_low_lighting_fp8_e4m3fn_v3.0.safetensors' && break; if [ $i -eq 5 ]; then echo "model-download failed after 5 attempts" >&2; exit 1; fi; SLEEP=$(echo $BACKOFFS | cut -d ' ' -f $i) && echo "model-download attempt $i failed; retrying in $SLEEP seconds" >&2; sleep $SLEEP; done
-RUN BACKOFFS="10 20 30 60 90" && for i in 1 2 3 4 5; do HF_TOKEN=$HF_TOKEN comfy model download --url 'https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors' --relative-path models/text_encoders --filename 'umt5_xxl_fp8_e4m3fn_scaled.safetensors' && break; if [ $i -eq 5 ]; then echo "model-download failed after 5 attempts" >&2; exit 1; fi; SLEEP=$(echo $BACKOFFS | cut -d ' ' -f $i) && echo "model-download attempt $i failed; retrying in $SLEEP seconds" >&2; sleep $SLEEP; done
-RUN BACKOFFS="10 20 30 60 90" && for i in 1 2 3 4 5; do HF_TOKEN=$HF_TOKEN comfy model download --url 'https://huggingface.co/Osrivers/nsfw_wan_umt5-xxl_fp8_scaled.safetensors/resolve/main/nsfw_wan_umt5-xxl_fp8_scaled.safetensors' --relative-path models/text_encoders --filename 'nsfw_wan_umt5-xxl_fp8_scaled.safetensors' && break; if [ $i -eq 5 ]; then echo "model-download failed after 5 attempts" >&2; exit 1; fi; SLEEP=$(echo $BACKOFFS | cut -d ' ' -f $i) && echo "model-download attempt $i failed; retrying in $SLEEP seconds" >&2; sleep $SLEEP; done
-RUN BACKOFFS="10 20 30 60 90" && for i in 1 2 3 4 5; do HF_TOKEN=$HF_TOKEN comfy model download --url 'https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/vae/wan_2.1_vae.safetensors' --relative-path models/vae --filename 'wan_2.1_vae.safetensors' && break; if [ $i -eq 5 ]; then echo "model-download failed after 5 attempts" >&2; exit 1; fi; SLEEP=$(echo $BACKOFFS | cut -d ' ' -f $i) && echo "model-download attempt $i failed; retrying in $SLEEP seconds" >&2; sleep $SLEEP; done
+# Models are already baked into the Network Volume (mounted at /runpod-volume).
+# Map /runpod-volume into ComfyUI's model search paths.
+ADD extra_model_paths.yaml /comfyui/extra_model_paths.yaml
 
-# copy all input data (like images or videos) into comfyui (uncomment and adjust if needed)
-# COPY input/ /comfyui/input/
+# Serverless handler + startup script (from runpod-workers/worker-comfyui)
+ADD handler.py /handler.py
+ADD start.sh /start.sh
+RUN chmod +x /start.sh
 
-# user-provided inputs override the auto-generated placeholders above.
-RUN wget --progress=dot:giga -O '/comfyui/input/upscaled-1440p-a1216524.png' "https://cool-anteater-319.convex.cloud/api/storage/819b16bb-b400-428e-967e-5f30330a482d"
+# Default command: start ComfyUI and the RunPod handler
+CMD ["/start.sh"]
